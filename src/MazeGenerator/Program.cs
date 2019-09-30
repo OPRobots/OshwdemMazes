@@ -20,15 +20,60 @@
  */
 
 using System;
+using Mono.Options;
 
 namespace Treboada.Net.Ia
 {
 	class Oshwdem
 	{
+		public bool ShouldShowHelp = false;
+
+		public float Straightforward = 0.50f;
+
 		public static void Main (string[] args)
 		{
+			// show the version
+			Console.WriteLine ("\nOSHWDEM Maze Generator v{0}.{1} R{2}", Version.Major, Version.Minor, Version.Revision);
+
 			Oshwdem oshwdem = new Oshwdem ();
-			oshwdem.Run ();
+
+			oshwdem.CommandLineArgs (args);
+			if (oshwdem.ShouldShowHelp) 
+			{
+				oshwdem.ShowHelp ();
+			}
+			else 
+			{
+				oshwdem.Run ();
+			}
+		}
+
+		private void ShowHelp()
+		{
+			Console.WriteLine ("\n-h --help");
+			Console.WriteLine ("    Shows this help");
+			Console.WriteLine ("\n-s --straightforward");
+			Console.WriteLine ("    Generates more straightness paths; float value (0.00 - 1.00), default is 0.00\n");
+		}
+
+		public void CommandLineArgs(string[] args)
+		{
+			try 
+			{
+				var options = new OptionSet { 
+					{ "s|straightforward=", "Probability to generate straightforward paths (0.0 - 1.0).", s => 	float.TryParse(s, out Straightforward) }, 
+					{ "h|help", "Show this message and exit", h => ShouldShowHelp = (h != null) },
+				};
+
+				//System.Collections.Generic.List<string> extra = 
+				options.Parse (args);
+			} 
+			catch (OptionException e) 
+			{
+				Console.WriteLine ("Command line arguments error: {0}", e.Message);
+				Console.WriteLine ("Try `--help' for more information.");
+				ShouldShowHelp = true;
+			}
 		}
 
 		private void Run()
@@ -37,16 +82,21 @@ namespace Treboada.Net.Ia
 			Maze maze = CreateMaze (16);
 
 			// the finish door
-			maze.UnsetWall (8, 8, Maze.Direction.S);
+			maze.UnsetWall (8, 7, Maze.Direction.E);
 
 			// prepare de generator
 			MazeGenerator generator = SetupGenerator (maze);
 
-			// generate from top-left corner, next to the starting cell
-			generator.Generate (1, 0);
+			// DepthFirst options
+			DepthFirst df = generator as DepthFirst;
+			if (df != null) 
+			{
+				df.Straightforward = Straightforward;
+				Console.WriteLine ("Algorithm: depth-first [straightforward probability {0:P0}]", Straightforward);
+			}
 
-			// show the version
-			Console.WriteLine ("OSHWDEM Maze Generator v{0}.{1} R{2}", Version.Major, Version.Minor, Version.Revision);
+			// generate from top-left corner, next to the starting cell
+			generator.Generate (0, maze.Cols - 2);
 
 			// output to the console
 			Console.Write (maze);
@@ -62,7 +112,7 @@ namespace Treboada.Net.Ia
 			Maze maze = new Maze (side, side, Maze.WallInit.Full);
 
 			// set the starting cell
-			maze.UnsetWall (0, 0, Maze.Direction.E);
+			maze.UnsetWall (0, maze.Cols - 1, Maze.Direction.N);
 
 			// clear the walls inside 2x2 center cells
 			maze.UnsetWall (7, 7, Maze.Direction.S);
@@ -80,7 +130,7 @@ namespace Treboada.Net.Ia
 			DepthFirst generator = new DepthFirst (maze);
 
 			// starting cell is set
-			generator.SetVisited (0, 0, true);
+			generator.SetVisited (0, maze.Cols - 1, true);
 
 			// dont enter into the 3x3 center
 			generator.SetVisited (7, 7, true);
