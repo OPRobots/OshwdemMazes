@@ -6,7 +6,7 @@ t=0
 while read r ; do 
     [ "$r" == "end" ] && break 
     clear 
-    echo -e "text 20,30\"\n$(echo '' | ../precompiled/MazeGenerator.exe \
+    echo -e "text 20,30\"\n$(echo '' | mono ../precompiled/MazeGenerator.exe -s 0,5 \
 	    | tail -n +4)\n\"" | tee maze.txt | tail -n +2 | head -n -1
     t=$((t+1)) 
     echo $t
