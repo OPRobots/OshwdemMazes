@@ -12,7 +12,7 @@ while read r ; do
     echo $t
 done 
     
-convert -size 690x565 xc:white -font "FreeMono" -pointsize 16 -fill black -draw @maze.txt maze.png 
+convert -size 690x620 xc:white -font "FreeMono" -pointsize 16 -fill black -draw @maze.txt maze.png 
 convert maze.png maze_div.png -compose dissolve -define compose:args=20 -composite print.png
 
 eog print.png 2> /dev/null &
