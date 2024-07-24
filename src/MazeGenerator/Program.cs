@@ -63,7 +63,7 @@ namespace Treboada.Net.Ia
             Console.WriteLine("\n-z --size");
             Console.WriteLine("    Defines the size of the maze; two int values separated by a comma, default is ({0},{1})", Cols, Rows);
             Console.WriteLine("\n-c --cornergoal");
-            Console.WriteLine("    Indicate if the goal is in the upper right corner. default is false (goal in the center\n");
+            Console.WriteLine("    Indicate if the goal is in the upper right corner. default is false (goal in the center)\n");
         }
 
 		public void CommandLineArgs(string[] args)

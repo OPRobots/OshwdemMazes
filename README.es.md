@@ -45,16 +45,22 @@ Nota para _usuarios de Güindows y OSex_: debería funcionar desde una consola. 
 
 Desde v1.3, hay un parámetro desde la línea de órdenes para generar el laberinto con caminos con rectas más largas:
 
-```
-$ ./MazeGenerator.exe -h
+### Maze size and goal location
+desde la revision de 2024, hay dos nuevos parámetros desde la línea de órdenes para establecer el tamaño del laberinto y la ubicación del objetivo:
 
-OSHWDEM Maze Generator v1.3 R2276
+```
 
 -h --help
     Shows this help
 
 -s --straightforward
     Generates more straightness paths; float value (0.00 - 1.00), default is 0.50
+	
+-z --size
+    Defines the size of the maze; two int values separated by a comma, default is 16,16
+
+-c --cornergoal
+    Indicate if the goal is in the upper right corner. default is false (goal in the center)
 ```
 
 ![Maze straightness 0%-100%](img/maze_straightness.gif)
