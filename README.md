@@ -42,18 +42,24 @@ Note for _Windoze and Osex users_: it should work from a console. However, we do
 
 ### Maze straightness
 
-Since v1.3, there is a command line parameter to generate the maze with more straightened paths:
+Since v1.3, there is a command line parameter to generate the maze with more straightened paths.
+
+### Maze size and goal location
+Since 2024 revision, there is two new command line parameters to set the size of the maze and the goal location:
 
 ```
-$ ./MazeGenerator.exe -h
-
-OSHWDEM Maze Generator v1.3 R2276
 
 -h --help
     Shows this help
 
 -s --straightforward
     Generates more straightness paths; float value (0.00 - 1.00), default is 0.50
+	
+-z --size
+    Defines the size of the maze; two int values separated by a comma, default is 16,16
+
+-c --cornergoal
+    Indicate if the goal is in the upper right corner. default is false (goal in the center)
 ```
 
 ![Maze straightness 0%-100%](img/maze_straightness.gif)

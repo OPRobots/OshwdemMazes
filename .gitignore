@@ -5,4 +5,5 @@ test-results/
 /contest-generator/maze.png
 /contest-generator/maze.txt
 /contest-generator/print.png
-
+src/MazeGenerator/app.config
+src/.vs/
