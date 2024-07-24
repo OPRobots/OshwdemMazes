@@ -20,6 +20,7 @@
  */
 
 using System;
+using System.Reflection.Emit;
 using Mono.Options;
 
 namespace Treboada.Net.Ia
@@ -30,7 +31,12 @@ namespace Treboada.Net.Ia
 
 		public float Straightforward = 0.50f;
 
-		public static void Main (string[] args)
+
+		public static int Cols = 16;
+		public static int Rows = 16;
+		public static bool CornerGoal = false;
+
+        public static void Main (string[] args)
 		{
 			// show the version
 			Console.WriteLine ("\nOSHWDEM Maze Generator v{0}.{1} R{2}", Version.Major, Version.Minor, Version.Revision);
@@ -52,9 +58,13 @@ namespace Treboada.Net.Ia
 		{
 			Console.WriteLine ("\n-h --help");
 			Console.WriteLine ("    Shows this help");
-			Console.WriteLine ("\n-s --straightforward");
-            Console.WriteLine ("    Generates more straightness paths; float value (0.00 - 1.00), default is {0}\n", Straightforward);
-		}
+            Console.WriteLine("\n-s --straightforward");
+            Console.WriteLine("    Generates more straightness paths; float value (0.00 - 1.00), default is {0}", Straightforward);
+            Console.WriteLine("\n-z --size");
+            Console.WriteLine("    Defines the size of the maze; two int values separated by a comma, default is ({0},{1})", Cols, Rows);
+            Console.WriteLine("\n-c --cornergoal");
+            Console.WriteLine("    Indicate if the goal is in the upper right corner. default is false (goal in the center\n");
+        }
 
 		public void CommandLineArgs(string[] args)
 		{
@@ -63,6 +73,18 @@ namespace Treboada.Net.Ia
 				var options = new OptionSet { 
 					{ "s|straightforward=", "Probability to generate straightforward paths (0.0 - 1.0).", s => 	float.TryParse(s, out Straightforward) }, 
 					{ "h|help", "Show this message and exit", h => ShouldShowHelp = (h != null) },
+                    { "z|size=", "Two integers separated by a comma.",
+					  n => {
+							var nums = n.Split(',');
+							if (nums.Length == 2 && int.TryParse(nums[0], out int num1) && int.TryParse(nums[1], out int num2)) {
+                                Cols = num1;
+								Rows = num2;
+							} else {
+								throw new OptionException("The argument should contain two integers separated by a comma.", "numbers");
+							}
+						} 
+					},
+                    { "c|cornergoal", "Indicate if the goal is in the corner.", c => CornerGoal = c != null }
 				};
 
 				//System.Collections.Generic.List<string> extra = 
@@ -78,49 +100,69 @@ namespace Treboada.Net.Ia
 
 		private void Run()
 		{
-			// create a square maze with 13 cells on every side
-			Maze maze = CreateMaze (16);
-
-			// the finish door
-			maze.UnsetWall (8, 7, Maze.Direction.E);
-
-			// prepare de generator
-			MazeGenerator generator = SetupGenerator (maze);
-
-			// DepthFirst options
-			DepthFirst df = generator as DepthFirst;
-			if (df != null) 
+			while (true)
 			{
-				df.Straightforward = Straightforward;
-				Console.WriteLine ("Algorithm: depth-first [straightforward probability {0:P0}]", Straightforward);
+				// create a square maze with 13 cells on every side
+				Maze maze = CreateMaze(Cols, Rows);
+
+				// the finish door
+				//maze.UnsetWall (3, 0, Maze.Direction.W);
+
+				// prepare de generator
+				MazeGenerator generator = SetupGenerator(maze);
+
+				// DepthFirst options
+				DepthFirst df = generator as DepthFirst;
+				if (df != null)
+				{
+					df.Straightforward = Straightforward;
+					Console.WriteLine("Algorithm: depth-first [straightforward probability {0:P0}]", Straightforward);
+				}
+
+				// generate from top-left corner, next to the starting cell
+				generator.Generate(maze.Cols - 2, 0);
+
+				// output to the console
+				Console.Write(maze);
+
+				// wait for <enter>
+				Console.ReadLine();
 			}
-
-			// generate from top-left corner, next to the starting cell
-			generator.Generate (0, maze.Cols - 2);
-
-			// output to the console
-			Console.Write (maze);
-
-			// wait for <enter>
-			Console.ReadLine ();
 		}
 
 
-		private Maze CreateMaze(int side)
+		private Maze CreateMaze(int X, int Y)
 		{
 			// square and fully walled
-			Maze maze = new Maze (side, side, Maze.WallInit.Full);
+			Maze maze = new Maze (X, Y, Maze.WallInit.Full, CornerGoal);
 
 			// set the starting cell
-			maze.UnsetWall (0, maze.Cols - 1, Maze.Direction.N);
+			maze.UnsetWall (0, maze.Rows - 1, Maze.Direction.N);
 
-			// clear the walls inside 2x2 center cells
-			maze.UnsetWall (7, 7, Maze.Direction.S);
-			maze.UnsetWall (7, 7, Maze.Direction.E);
-			maze.UnsetWall (8, 7, Maze.Direction.S);
-			maze.UnsetWall (7, 8, Maze.Direction.E);
+			if (!CornerGoal) {
+                if (Cols % 2 == 0) {
+                    //clear the walls inside 2x2 center cells
+                    maze.UnsetWall(maze.Cols / 2 - 1, maze.Rows / 2 - 1, Maze.Direction.S);
+                    maze.UnsetWall(maze.Cols / 2 - 1, maze.Rows / 2 - 1, Maze.Direction.E);
+                    maze.UnsetWall(maze.Cols / 2, maze.Rows / 2 - 1, Maze.Direction.S);
+                    maze.UnsetWall(maze.Cols / 2 - 1, maze.Rows / 2, Maze.Direction.E);
+                }
+                else {
+                    // // clear the walls inside 2x2 upper right center cells
+                    maze.UnsetWall(maze.Cols / 2, maze.Rows / 2 - 1, Maze.Direction.S);
+                    maze.UnsetWall(maze.Cols / 2, maze.Rows / 2 - 1, Maze.Direction.E);
+                    maze.UnsetWall(maze.Cols / 2 + 1, maze.Rows / 2 - 1, Maze.Direction.S);
+                    maze.UnsetWall(maze.Cols / 2, maze.Rows / 2, Maze.Direction.E);
 
-			return maze;
+                }
+            } else {
+				// clear the walls inside 2x2 upper right corner cells
+				maze.UnsetWall(maze.Cols - 2, 0, Maze.Direction.S);
+				maze.UnsetWall(maze.Cols - 2, 0, Maze.Direction.E);
+				maze.UnsetWall(maze.Cols - 1, 0, Maze.Direction.S);
+				maze.UnsetWall(maze.Cols - 2, 1, Maze.Direction.E);
+			}
+            return maze;
 		}
 
 
@@ -130,15 +172,37 @@ namespace Treboada.Net.Ia
 			DepthFirst generator = new DepthFirst (maze);
 
 			// starting cell is set
-			generator.SetVisited (0, maze.Cols - 1, true);
+			generator.SetVisited (0, maze.Rows - 1, true);
 
-			// dont enter into the 3x3 center
-			generator.SetVisited (7, 7, true);
-			generator.SetVisited (8, 7, true);
-			generator.SetVisited (7, 8, true);
-			generator.SetVisited (8, 8, true);
+            if (!CornerGoal)
+            {
+				if (Cols%2 == 0) {
+                    // dont enter into the 2x2 center
+                    generator.SetVisited(maze.Cols / 2 - 1, maze.Rows / 2 - 1, true);
+                    generator.SetVisited(maze.Cols / 2 - 1, maze.Rows / 2 - 1, true);
+                    generator.SetVisited(maze.Cols / 2, maze.Rows / 2 - 1, true);
+                    generator.SetVisited(maze.Cols / 2 - 1, maze.Rows / 2, true);
+                }
+				else {
+                    // dont enter into the 2x2 upper right center
+                    generator.SetVisited(maze.Cols / 2, maze.Rows / 2 - 1, true);
+                    generator.SetVisited(maze.Cols / 2, maze.Rows / 2 - 1, true);
+                    generator.SetVisited(maze.Cols / 2 + 1, maze.Rows / 2 - 1, true);
+                    generator.SetVisited(maze.Cols / 2, maze.Rows / 2, true);
 
-			return generator;
+                }
+
+
+            }
+            else {
+                // clear the walls inside 2x2 upper right corner cells
+                generator.SetVisited(maze.Cols - 2, 0, true);
+                //generator.SetVisited(maze.Cols - 2, 1, true);
+                generator.SetVisited(maze.Cols - 1, 0, true);
+                //generator.SetVisited(maze.Cols - 1, 1, true);
+            }
+            
+            return generator;
 		}
 
 

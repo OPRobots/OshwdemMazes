@@ -1,4 +1,4 @@
-/***
+﻿/***
  * 
  *   MazeGenerator - It generates mazes for OSHWDEM's robot contest.
  * 
@@ -22,13 +22,10 @@
 using System;
 using System.Text;
 
-namespace Treboada.Net.Ia
-{
-    public class Maze
-    {
+namespace Treboada.Net.Ia {
+    public class Maze {
 		// bit mapped directions
-        public enum Direction : byte
-        {
+        public enum Direction : byte {
             N = 1 << 0,
             E = 1 << 1,
             S = 1 << 2,
@@ -36,8 +33,7 @@ namespace Treboada.Net.Ia
         }
 
 		// wall configuration at contructor
-		public enum WallInit
-		{
+		public enum WallInit {
 			None,
 			Perimeter,
 			Full,
@@ -65,19 +61,22 @@ namespace Treboada.Net.Ia
         public int Rows { get; private set; }
         public int Cols { get; private set; }
 
-		// count of cells
-		public int Count { get; private set; }
+
+		public static bool CornerGoal { get; private set; }
+
+        // count of cells
+        public int Count { get; private set; }
 
 		// the cells
         byte[] Cells;
 
 		// constructor
-		public Maze(int cols, int rows, WallInit init)
-        {
+		public Maze(int cols, int rows, WallInit init, bool cornerGoal) {
 			// basic properties
             Cols = cols;
 			Rows = rows;
             Count = rows * cols;
+            CornerGoal = cornerGoal;
 
 			// array with the cells
             Cells = new byte[Count];
@@ -104,38 +103,33 @@ namespace Treboada.Net.Ia
 					for (int c = 0; c < cols; c++) {
 
 						// four sides
-						this [r, c] = Cell_NESW;
+						this [c, r] = Cell_NESW;
 					}
 				}
 			}
         }
 
-        public byte this[int index]
-        {
+        public byte this[int index] {
             get { return Cells[index]; }
             private set { Cells[index] = value; }
         }
 
-        public byte this[int col, int row]
-        {
-            get { return Cells[(row * Cols) + col]; }
-			private set { Cells[(row * Cols) + col] = value; }
+        public byte this[int col, int row] {
+            get { return Cells[(col * Rows) + row]; }
+			private set { Cells[(col * Rows) + row] = value; }
         }
 
-		public bool IsOpen(int col, int row, Direction wall)
-        {
+		public bool IsOpen(int col, int row, Direction wall) {
             int cell = this[col, row];
             int mask = (int)wall;
             return ((cell & mask) == 0);
         }
 
-		public void SetWall(int col, int row, Direction wall)
-		{
+		public void SetWall(int col, int row, Direction wall) {
 			SetWall (col, row, wall, true);
 		}
 
-		private void SetWall(int col, int row, Direction wall, bool first)
-		{
+		private void SetWall(int col, int row, Direction wall, bool first) {
 			int cell = this [col, row];
 			int mask = (int)wall;
 			this[col, row] = (byte)(cell | mask);
@@ -157,13 +151,11 @@ namespace Treboada.Net.Ia
 			}
 		}
 
-		public void UnsetWall(int col, int row, Direction wall)
-		{
+		public void UnsetWall(int col, int row, Direction wall) {
 			UnsetWall (col, row, wall, true);
 		}
 
-		private void UnsetWall(int col, int row, Direction wall, bool first)
-		{
+		private void UnsetWall(int col, int row, Direction wall, bool first) {
 			int cell = this [col, row];
 			int mask = (int)wall;
 			this[col, row] = (byte)(cell & ~mask);
@@ -185,8 +177,7 @@ namespace Treboada.Net.Ia
 			}
 		}
 
-		public override string ToString ()
-		{
+		public override string ToString () {
 			StringBuilder str = new StringBuilder ();
 
 			foreach (string s in StrLines(4, 2, true)) {
@@ -196,8 +187,7 @@ namespace Treboada.Net.Ia
 			return str.ToString ();
 		}
 
-		public string[] StrLines(int cellSizeWidth, int cellSizeHeight, bool abMarks)
-        {
+		public string[] StrLines(int cellSizeWidth, int cellSizeHeight, bool abMarks) {
 			string[] lines = new string[(Rows * cellSizeHeight) + 1];
 
 			// the big buffer of chars
@@ -209,23 +199,40 @@ namespace Treboada.Net.Ia
 			}
 
 			// render every cell
-            for (int r = 0; r < Rows; r++)
-            {
-                for (int c = 0; c < Cols; c++)
-                {
+            for (int r = 0; r < Rows; r++) { 
+                for (int c = 0; c < Cols; c++) {
 					BuildStringCell(buffer, c, r, cellSizeWidth, cellSizeHeight);
                 }
             }
 
 			// A and B marks
-            if (abMarks)
-            {
-                buffer[cellSizeWidth / 2, Cols * cellSizeHeight - 1] = 'S';
-                buffer[(Cols - 1) * cellSizeWidth / 2, (Rows - 1) * cellSizeHeight / 2] = 'G';
-                buffer[(Cols - 1) * cellSizeWidth / 2, (Rows + 1) * cellSizeHeight / 2] = 'G';
-                buffer[(Cols + 1) * cellSizeWidth / 2, (Rows - 1) * cellSizeHeight / 2] = 'G';
-                buffer[(Cols + 1) * cellSizeWidth / 2, (Rows + 1) * cellSizeHeight / 2] = 'G';
-                buffer[Cols * cellSizeWidth / 2, Rows * cellSizeHeight / 2] = 'o';
+            if (abMarks) {
+                buffer[cellSizeWidth/2, Rows * cellSizeHeight - 1] = 'S';
+
+                if (!CornerGoal)
+                {
+                    if (Cols % 2 == 0) {
+                        buffer[(Cols - 1) * cellSizeWidth / 2, (Rows - 1) * cellSizeHeight / 2] = 'G';
+                        buffer[(Cols - 1) * cellSizeWidth / 2, (Rows + 1) * cellSizeHeight / 2] = 'G';
+                        buffer[(Cols + 1) * cellSizeWidth / 2, (Rows - 1) * cellSizeHeight / 2] = 'G';
+                        buffer[(Cols + 1) * cellSizeWidth / 2, (Rows + 1) * cellSizeHeight / 2] = 'G';
+                    }
+                    else {
+                        buffer[(Cols - 1) * cellSizeWidth / 2 +2, (Rows - 1) * cellSizeHeight / 2 -1] = 'G';
+                        buffer[(Cols - 1) * cellSizeWidth / 2 +2, (Rows + 1) * cellSizeHeight / 2 -1] = 'G';
+                        buffer[(Cols + 1) * cellSizeWidth / 2 +2, (Rows - 1) * cellSizeHeight / 2 -1] = 'G';
+                        buffer[(Cols + 1) * cellSizeWidth / 2 +2, (Rows + 1) * cellSizeHeight / 2 -1] = 'G';
+
+                    }
+                }
+                else {
+                    buffer[cellSizeWidth * (Cols - 1) - 2, cellSizeHeight / 2 + 2] = 'G';
+                    buffer[cellSizeWidth * (Cols - 1) - 2, cellSizeHeight / 2] = 'G';
+                    buffer[cellSizeWidth * Cols - 2, cellSizeHeight / 2 + 2] = 'G';
+                    buffer[cellSizeWidth * Cols - 2, cellSizeHeight / 2] = 'G';
+                }
+
+                //buffer[Cols * cellSizeWidth / 2, Rows * cellSizeHeight / 2] = 'o';
             }
 
 			// convert the big buffer to an array of lines
@@ -255,45 +262,45 @@ namespace Treboada.Net.Ia
 			// top
             if (!IsOpen(col, row, Direction.N))
             {
-				buffer[x, y] = 'o';
+				buffer[x, y] = '×';
 				for (int c = 1; c < cellSizeWidth; c++)
                 {
-                    buffer[x + c, y] = '-';
+                    buffer[x + c, y] = '═';
                 }
-				buffer[x + cellSizeWidth, y] = 'o';
+				buffer[x + cellSizeWidth, y] = '×';
             }
 
 			// bottom
 			if (!IsOpen(col, row, Direction.S))
 			{
-				buffer[x, y + cellSizeHeight] = 'o';
+				buffer[x, y + cellSizeHeight] = '×';
 				for (int c = 1; c < cellSizeWidth; c++)
 				{
-					buffer[x + c, y + cellSizeHeight] = '-';
+					buffer[x + c, y + cellSizeHeight] = '═';
 				}
-				buffer[x + cellSizeWidth, y + cellSizeHeight] = 'o';
+				buffer[x + cellSizeWidth, y + cellSizeHeight] = '×';
 			}
 
 			// left
 			if (!IsOpen(col, row, Direction.W))
 			{
-				buffer[x, y] = 'o';
+				buffer[x, y] = '×';
 				for (int c = 1; c < cellSizeHeight; c++)
 				{
-					buffer[x, y + c] = '|';
+					buffer[x, y + c] = '║';
 				}
-				buffer[x, y + cellSizeHeight] = 'o';
+				buffer[x, y + cellSizeHeight] = '×';
 			}
 
 			// right
 			if (!IsOpen(col, row, Direction.E))
 			{
-				buffer[x + cellSizeWidth, y] = 'o';
+				buffer[x + cellSizeWidth, y] = '×';
 				for (int c = 1; c < cellSizeHeight; c++)
 				{
-					buffer[x + cellSizeWidth, y + c] = '|';
+					buffer[x + cellSizeWidth, y + c] = '║';
 				}
-				buffer[x + cellSizeWidth, y + cellSizeHeight] = 'o';
+				buffer[x + cellSizeWidth, y + cellSizeHeight] = '×';
 			}
 		}
 
